@@ -151,6 +151,14 @@ IB_regular = sp.Matrix([
 
 Is_regular = generate_tidal_s(IB_regular)
 
+IB_singular = sp.Matrix([
+    [c_1(x)*alpha_omg*omega_c**2, l_i+1, alpha_grv*(l_i+1), 0, 0, 0],
+    [0, 0, l_i+1, 1, 0, 0],
+    [0, 0, 0, 0, 1, 0]
+])
+
+Is_singular = generate_tidal_s(IB_singular)
+
 IB_zero_r = sp.Matrix([
     [1, 0, 0, 0, 0, 0],
     [0, 0, 0, 1, 0, 0],
@@ -305,6 +313,9 @@ if __name__ == '__main__':
 
         with open(f'{vars}/IB_regular.inc', 'w') as file:
             file.write(generate_IB(IB_regular, Is_regular, T)+'\n')
+
+        with open(f'{vars}/IB_singular.inc', 'w') as file:
+            file.write(generate_IB(IB_singular, Is_singular, T)+'\n')
 
         with open(f'{vars}/IB_zero_r.inc', 'w') as file:
             file.write(generate_IB(IB_zero_r, Is_zero_r, T)+'\n')

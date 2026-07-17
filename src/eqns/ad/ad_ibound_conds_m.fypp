@@ -100,6 +100,9 @@ contains
       case ('REGULAR')
          @:ASSERT(pt%x == 0._RD, 'boundary condition invalid for x /= 0')
          bc%eval_ => eval_regular_
+      case ('SINGULAR')
+         @:ASSERT(pt%x /= 0._RD, 'boundary condition invalid for x == 0')
+         bc%eval_ => eval_singular_
       case ('ZERO_R')
          @:ASSERT(pt%x /= 0._RD, 'boundary condition invalid for x == 0')
          bc%eval_ => eval_zero_r_
@@ -210,6 +213,65 @@ contains
       return
 
    end subroutine eval_regular_
+
+   subroutine eval_singular_(this, st, B, s, trans)
+
+      class(${P}$_ad_ibound_conds_t), intent(in)  :: this
+      class(state_rt), intent(in)                 :: st
+      real(RD), contiguous, intent(out)           :: B(:,:)
+      real(RD), contiguous, intent(out), optional :: s(:)
+      logical, intent(in), optional               :: trans
+
+      logical  :: trans_
+      real(RD) :: omega_c
+      real(RD) :: lambda
+      real(RD) :: l_i
+
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
+      end if
+
+      if (trans_) then
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_b)
+      else
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      end if
+
+      if (PRESENT(s)) then
+         @:CHECK_BOUNDS(SIZE(s), this%n_e)
+      end if
+
+      ! Evaluate the inner boundary conditions matrix and
+      ! inhomogeneous vector (singularity-enforcing)
+
+      associate( &
+         y_T_1 => st%y_T_1, &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         c_1 => this%c_1, &
+         Omega_rot => this%cx%Omega_rot_i, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_omg => this%cx%alpha_omg, &
+         m => this%cx%m)
+
+         omega_c = omega - m*Omega_rot
+
+         lambda = this%cx%lambda(Omega_rot, st)
+         l_i = this%cx%l_e(Omega_rot, st)
+
+         #:include 'IB_singular.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine eval_singular_
 
    !****
 
